@@ -1,0 +1,160 @@
+@{
+    ViewData["Title"] = "Lecturer Preferences";
+    var lecturers   = ViewBag.Lecturers   as List<TimetableApp.Models.DropdownItem>    ?? new List<TimetableApp.Models.DropdownItem>();
+    var subjects    = ViewBag.Subjects    as List<TimetableApp.Models.DropdownItem>    ?? new List<TimetableApp.Models.DropdownItem>();
+    var preferences = ViewBag.Preferences as List<TimetableApp.Models.PreferenceModel> ?? new List<TimetableApp.Models.PreferenceModel>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0 fw-semibold"><i class="bi bi-list-ol me-2 text-secondary"></i>Lecturer Preferences</h4>
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-2">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-3">
+
+    @* ── Preference Form ──────────────────────────────────────── *@
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-secondary text-white py-2">
+                <i class="bi bi-sliders me-1"></i> Set Preferences
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info py-2 small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Subjects shown by <strong>name</strong> — SubjectCode is saved to the database.
+                    If the lecturer already has preferences, they will be <strong>updated</strong>.
+                </div>
+                <form asp-controller="Preference" asp-action="Save" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Lecturer <span class="text-danger">*</span></label>
+                        <select name="LecturerID" class="form-select" required>
+                            @foreach (var l in lecturers)
+                            {
+                                <option value="@l.Value">@l.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    @* 1st Preference — required *@
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">
+                            <span class="badge bg-danger me-1">1st</span> Most Preferred
+                            <span class="text-danger">*</span>
+                        </label>
+                        <select name="Pref1" class="form-select" required>
+                            @foreach (var s in subjects)
+                            {
+                                @* Value = SubjectCode (saved), Text = SubjectName (shown) *@
+                                <option value="@s.Value">@s.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold"><span class="badge bg-warning text-dark me-1">2nd</span></label>
+                        <select name="Pref2" class="form-select">
+                            @foreach (var s in subjects) { <option value="@s.Value">@s.Text</option> }
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold"><span class="badge bg-info me-1">3rd</span></label>
+                        <select name="Pref3" class="form-select">
+                            @foreach (var s in subjects) { <option value="@s.Value">@s.Text</option> }
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold"><span class="badge bg-secondary me-1">4th</span></label>
+                        <select name="Pref4" class="form-select">
+                            @foreach (var s in subjects) { <option value="@s.Value">@s.Text</option> }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <span class="badge bg-light text-dark border me-1">5th</span> Least Preferred
+                        </label>
+                        <select name="Pref5" class="form-select">
+                            @foreach (var s in subjects) { <option value="@s.Value">@s.Text</option> }
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary w-100 text-white">
+                        <i class="bi bi-save me-1"></i> Save Preferences
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ── Saved Preferences Grid ───────────────────────────────── *@
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white py-2">
+                <i class="bi bi-table me-1"></i> Saved Preferences
+                <span class="badge bg-secondary ms-2">@preferences.Count</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Lecturer</th>
+                                <th><span class="badge bg-danger">1st</span></th>
+                                <th><span class="badge bg-warning text-dark">2nd</span></th>
+                                <th><span class="badge bg-info">3rd</span></th>
+                                <th><span class="badge bg-secondary">4th</span></th>
+                                <th><span class="badge bg-light text-dark border">5th</span></th>
+                                <th class="text-center">Del</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!preferences.Any())
+                            {
+                                <tr><td colspan="7" class="text-center text-muted py-4">No preferences saved yet.</td></tr>
+                            }
+                            @foreach (var p in preferences)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@p.LecturerName</td>
+                                    <td>@p.Pref1Name</td>
+                                    <td>@p.Pref2Name</td>
+                                    <td>@p.Pref3Name</td>
+                                    <td>@p.Pref4Name</td>
+                                    <td>@p.Pref5Name</td>
+                                    <td class="text-center">
+                                        <form asp-controller="Preference" asp-action="Delete" method="post" class="d-inline"
+                                              onsubmit="return confirm('Delete preferences for @p.LecturerName?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="prefID" value="@p.PrefID" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

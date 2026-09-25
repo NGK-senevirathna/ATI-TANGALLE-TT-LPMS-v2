@@ -1,0 +1,211 @@
+﻿@{
+    ViewData["Title"] = "Timetable";
+    var timetable = ViewBag.Timetable as List<TimetableApp.Models.TimetableModel> ?? new List<TimetableApp.Models.TimetableModel>();
+    var lecturers = ViewBag.Lecturers as List<TimetableApp.Models.DropdownItem> ?? new List<TimetableApp.Models.DropdownItem>();
+    var subjects = ViewBag.Subjects as List<TimetableApp.Models.DropdownItem> ?? new List<TimetableApp.Models.DropdownItem>();
+    var halls = ViewBag.Halls as List<TimetableApp.Models.DropdownItem> ?? new List<TimetableApp.Models.DropdownItem>();
+    var slots = ViewBag.Slots as List<TimetableApp.Models.DropdownItem> ?? new List<TimetableApp.Models.DropdownItem>();
+    var dayList = ViewBag.Days as List<string> ?? new List<string>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0 fw-semibold"><i class="bi bi-calendar-week me-2 text-danger"></i>Timetable</h4>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <form asp-controller="Timetable" asp-action="MyTimetable" method="get" class="d-flex gap-2">
+            <select name="lecturerId" class="form-select form-select-sm" style="width:200px" required>
+                <option value="">-- My Timetable: pick lecturer --</option>
+                @foreach (var l in lecturers)
+                {
+                    @if (!string.IsNullOrEmpty(l.Value))
+                    {
+                        <option value="@l.Value">@l.Text</option>
+                    }
+                }
+            </select>
+            <button type="submit" class="btn btn-outline-dark btn-sm"><i class="bi bi-person-lines-fill me-1"></i> My Timetable</button>
+        </form>
+        <a asp-controller="Timetable" asp-action="Weekly" class="btn btn-primary btn-sm"><i class="bi bi-grid-3x3 me-1"></i> Weekly Grid</a>
+        <a asp-controller="Timetable" asp-action="Print" class="btn btn-dark btn-sm" target="_blank"><i class="bi bi-printer me-1"></i> Print Timetable</a>
+    </div>
+</div>
+
+@if (TempData["Message"] != null)
+{<div class="alert alert-success alert-dismissible fade show py-2">@TempData["Message"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
+@if (TempData["Error"] != null)
+{<div class="alert alert-danger alert-dismissible fade show py-2">@TempData["Error"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-danger text-white py-2"><i class="bi bi-plus-circle me-1"></i> Add Entry</div>
+            <div class="card-body">
+                <form asp-controller="Timetable" asp-action="Save" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Lecturer <span class="text-danger">*</span></label>
+                        <select id="lecturerSelect" name="LecturerID" class="form-select form-select-sm" required>
+                            <option value="">-- Select Lecturer --</option>
+                            @foreach (var l in lecturers)
+                            {
+                                @if (!string.IsNullOrEmpty(l.Value))
+                                {
+                                    <option value="@l.Value">@l.Text</option>
+                                }
+}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Subject <span class="text-danger">*</span></label>
+                        <select id="subjectSelect" name="SubjectCode" class="form-select form-select-sm" required>
+                            <option value="">-- Select Lecturer First --</option>
+                        </select>
+                        <div class="form-text">Shows this lecturer's own preferences, ranked 1st→5th. If they have not set any, all subjects are shown. Subjects already taken by another lecturer are hidden.</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Hall <span class="text-danger">*</span></label>
+                        <select name="HallName" class="form-select form-select-sm" required>
+                            @foreach (var h in halls)
+                            {
+                                <option value="@h.Value">@h.Text</option>
+}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Day <span class="text-danger">*</span></label>
+                        <select name="DayOfWeek" class="form-select form-select-sm" required>
+                            <option value="">-- Select Day --</option>
+                            @foreach (var d in dayList)
+                            {
+                                <option value="@d">@d</option>
+}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>
+                        <select name="SlotPosition" class="form-select form-select-sm" required>
+                            @foreach (var sl in slots)
+                            {
+                                <option value="@sl.Value">@sl.Text</option>
+}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Number of Periods <span class="text-danger">*</span></label>
+                        <input type="number" name="PeriodCount" class="form-control form-control-sm" value="1" min="1" max="9" required />
+                        <div class="form-text">E.g. 2 periods from 8.30-9.30 fills 8.30-9.30 AND 9.30-10.30 in one go. Can't cross the lunch break.</div>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100 btn-sm"><i class="bi bi-save me-1"></i> Add Entry</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white py-2 d-flex justify-content-between">
+                <span><i class="bi bi-table me-1"></i> All Entries</span>
+                <span class="badge bg-secondary">@timetable.Count</span>
+            </div>
+            <div class="card-body p-0">
+                @if (!timetable.Any())
+                {<div class="text-center text-muted py-5">No entries yet.</div> }
+                else
+                {
+                    var days = timetable.Select(t => t.DayOfWeek).Distinct()
+                                         .OrderBy(d => dayList.IndexOf(d) < 0 ? 999 : dayList.IndexOf(d))
+                                         .ToList();
+                    @foreach (var day in days)
+                    {
+                        var dayEntries = timetable.Where(t => t.DayOfWeek == day).OrderBy(t => t.SortOrder).ToList();
+                        <div class="px-3 pt-2 pb-1" style="background:#f1f3f5;border-bottom:1px solid #dee2e6">
+                            <span class="fw-semibold text-uppercase small"><i class="bi bi-calendar-day me-1"></i>@day</span>
+                        </div>
+                        <table class="table table-sm table-hover mb-0 small">
+                            <thead class="table-dark">
+                                <tr><th>Time</th><th>Code</th><th>Subject</th><th>Lecturer</th><th>Hall</th><th style="width:50px">Del</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var e in dayEntries)
+                                {
+                                    <tr>
+                                        <td><strong>@e.Duration</strong></td>
+                                        <td><span class="badge bg-primary">@e.SubjectCode</span></td>
+                                        <td>@e.SubjectName</td>
+                                        <td>@e.LecturerName</td>
+                                        <td>@e.HallName</td>
+                                        <td>
+                                            <form asp-controller="Timetable" asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Remove this entry?')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="timetableID" value="@e.TimetableID" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    // Data embedded by the controller (Index action):
+    //   lecturerPrefs[lecturerId]      -> [{ code, name, rank }, ...] ordered 1st..5th
+    //   assignedSubjects[subjectCode]  -> LecturerID that already owns it (if any)
+    var lecturerPrefs = @Html.Raw(ViewBag.LecturerPreferencesJson ?? "{}");
+    var assignedSubjects = @Html.Raw(ViewBag.AssignedSubjectsJson ?? "{}");
+    var allSubjects = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(subjects));
+
+    var lecturerSelect = document.getElementById('lecturerSelect');
+    var subjectSelect = document.getElementById('subjectSelect');
+
+    function addOption(value, text) {
+        var opt = document.createElement('option');
+        opt.value = value;
+        opt.text = text;
+        subjectSelect.appendChild(opt);
+    }
+
+    function populateSubjects(lecturerId) {
+        subjectSelect.innerHTML = '';
+
+        if (!lecturerId) {
+            addOption('', '-- Select Lecturer First --');
+            return;
+        }
+
+        var prefs = lecturerPrefs[lecturerId];
+
+        if (prefs && prefs.length > 0) {
+            // This lecturer HAS saved preferences — show only those, ranked
+            // 1st -> 5th. Skip any subject already taken by someone else.
+            addOption('', '-- Select Subject --');
+            prefs.forEach(function (p) {
+                var owner = assignedSubjects[p.code];
+                if (owner && owner !== lecturerId) return;
+                addOption(p.code, p.name + ' — ' + p.rank);
+            });
+        } else {
+            // No preferences saved yet — fall back to the full subject list.
+            addOption('', '-- Select Subject --');
+            allSubjects.forEach(function (s) {
+                if (!s.Value) return; // skip the placeholder entry from the server list
+                var owner = assignedSubjects[s.Value];
+                if (owner && owner !== lecturerId) return;
+                addOption(s.Value, s.Text);
+            });
+        }
+    }
+
+    lecturerSelect.addEventListener('change', function () {
+        populateSubjects(this.value);
+    });
+
+    // Re-populate on load too, in case the browser restored a previous selection
+    if (lecturerSelect.value) populateSubjects(lecturerSelect.value);
+})();
+</script>

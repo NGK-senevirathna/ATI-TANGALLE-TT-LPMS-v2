@@ -1,0 +1,261 @@
+﻿@model List<TimetableApp.Models.TimetableModel>
+@using TimetableApp.Models
+@{
+    ViewData["Title"] = "Weekly Timetable";
+
+    // Cast ViewBag safely
+    var timeSlots = ViewBag.TimeSlots as List<TimeSlotModel> ?? new List<TimeSlotModel>();
+
+    // Grid: [DayOfWeek][Duration] → TimetableModel
+    var grid = ViewBag.TimetableGrid as Dictionary<string, Dictionary<string, TimetableModel>>
+               ?? new Dictionary<string, Dictionary<string, TimetableModel>>();
+
+    // Fixed day columns — all 7 days now have lectures
+    var days = new List<string> { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+}
+
+<style>
+    .tt-wrap {
+        overflow-x: auto;
+    }
+
+    .tt-table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 700px;
+    }
+
+        .tt-table th {
+            background: #212529;
+            color: #fff;
+            text-align: center;
+            font-size: 0.78rem;
+            letter-spacing: .06em;
+            padding: 10px 8px;
+            border: 1px solid #444;
+            white-space: nowrap;
+        }
+
+        .tt-table td {
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #dee2e6;
+            padding: 8px 6px;
+            min-width: 110px;
+        }
+
+            /* Left column — time label */
+            .tt-table td.time-col {
+                background: #212529;
+                color: #fff;
+                font-weight: 600;
+                font-size: 0.82rem;
+                white-space: nowrap;
+                width: 170px;
+            }
+
+            /* Empty cell dash */
+            .tt-table td.empty-cell {
+                color: #adb5bd;
+                font-size: 1.1rem;
+            }
+
+    /* Cell content styles */
+    .cell-code {
+        display: inline-block;
+        background: #0d6efd;
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 3px;
+        margin-bottom: 3px;
+        letter-spacing: .03em;
+    }
+
+    .cell-subject {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #0d6efd;
+        line-height: 1.3;
+        display: block;
+    }
+
+    .cell-lecturer {
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #212529;
+        margin-top: 2px;
+        display: block;
+    }
+
+    .cell-hall {
+        font-size: 0.72rem;
+        color: #6c757d;
+        margin-top: 1px;
+        display: block;
+    }
+
+    /* Print */
+    @@media print {
+        body * {
+            visibility: hidden !important;
+        }
+
+        #printArea, #printArea * {
+            visibility: visible !important;
+        }
+
+        #printArea {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+
+        .tt-table {
+            font-size: 9px;
+        }
+
+            .tt-table th {
+                background: #212529 !important;
+                color: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .tt-table td.time-col {
+                background: #343a40 !important;
+                color: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+        .cell-code {
+            font-size: 8px;
+        }
+
+        .cell-subject, .cell-lecturer, .cell-hall {
+            font-size: 7px;
+        }
+
+        .print-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .print-sub {
+            font-size: 10px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+    }
+</style>
+
+<!-- ── Page header ─────────────────────────────────────────────── -->
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h4 class="mb-0 fw-semibold">
+        <i class="bi bi-calendar3-week me-2 text-primary"></i>Weekly Timetable
+    </h4>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-dark btn-sm" onclick="printTimetable()">
+            <i class="bi bi-printer me-1"></i> Print / Save as PDF
+        </button>
+        <a asp-controller="Timetable" asp-action="Index" class="btn btn-secondary btn-sm">
+            <i class="bi bi-list-ul me-1"></i> Back to List View
+        </a>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info no-print">
+        <i class="bi bi-info-circle me-2"></i>
+        No timetable entries yet.
+        <a asp-controller="Timetable" asp-action="Index">Add entries here</a>.
+    </div>
+}
+else
+{
+    <div id="printArea">
+
+        <!-- Print-only college header (hidden on screen) -->
+        <div id="printHeader" style="display:none">
+            <div class="print-title">TAN College of Technology</div>
+            <div class="print-sub">Weekly Timetable &nbsp;|&nbsp; @DateTime.Now.ToString("dd MMMM yyyy")</div>
+        </div>
+
+        <div class="tt-wrap">
+            <table class="tt-table">
+                <thead>
+                    <tr>
+                        <th style="width:170px">TIME SLOT</th>
+                        @foreach (var day in days)
+                        {
+                            <th>@day.ToUpper()</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @* ── Each row = one time slot, ordered by SortOrder ── *@
+                    @foreach (var slot in timeSlots)
+                    {
+                        <tr>
+                            <td class="time-col">@slot.Duration</td>
+
+                            @if (slot.Duration.Contains("12.30-1.00"))
+                            {
+                                <td colspan="7" style="background:#f8f9fa;font-weight:600;text-align:center;color:#495057;">L U N C H &nbsp;T I M E</td>
+                            }
+                            else
+                            {
+                                @* ── Each column = one day ── *@
+                                @foreach (var day in days)
+                                {
+                                    bool hasEntry = grid.ContainsKey(day) && grid[day].ContainsKey(slot.Duration);
+
+                                    if (hasEntry)
+                                    {
+                                        var e = grid[day][slot.Duration];
+                                        <td>
+                                            @* SubjectCode badge *@
+                                            <span class="cell-code">@e.SubjectCode</span>
+                                            @* Subject name *@
+                                            <span class="cell-subject">@e.SubjectName</span>
+                                            @* Lecturer name *@
+                                            <span class="cell-lecturer">@e.LecturerName</span>
+                                            @* Hall name *@
+                                            <span class="cell-hall">@e.HallName</span>
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td class="empty-cell">—</td>
+                                    }
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+}
+
+@section Scripts {
+    <script>
+    function printTimetable() {
+        document.getElementById('printHeader').style.display = 'block';
+        window.print();
+        setTimeout(function () {
+            document.getElementById('printHeader').style.display = 'none';
+        }, 1500);
+    }
+    </script>
+}

@@ -1,0 +1,373 @@
+﻿@model List<TimetableApp.Models.TimetableModel>
+@using TimetableApp.Models
+@using System.Linq
+@{
+    ViewData["Title"] = "Class Timetable";
+    var timeSlots = ViewBag.TimeSlots as List<TimeSlotModel> ?? new List<TimeSlotModel>();
+
+    // All 7 days have lectures now
+    var days = new List<string> { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+
+    // Build grid: [DayOfWeek][Duration TEXT] → list of entries.
+    // MUST key by Duration text (e.g. "8.30-9.30"), NOT by SlotID — SlotID
+    // is a GLOBAL number (1-70, unique per day+time), so Tuesday's
+    // "8.30-9.30" has a completely different SlotID than Monday's. Keying
+    // by SlotID would only ever match one day's entries.
+    var grid = new Dictionary<string, Dictionary<string, List<TimetableModel>>>();
+    foreach (var day in days)
+        grid[day] = new Dictionary<string, List<TimetableModel>>();
+
+    foreach (var e in Model)
+    {
+        if (!grid.ContainsKey(e.DayOfWeek)) continue;
+        if (!grid[e.DayOfWeek].ContainsKey(e.Duration))
+            grid[e.DayOfWeek][e.Duration] = new List<TimetableModel>();
+        grid[e.DayOfWeek][e.Duration].Add(e);
+    }
+
+    // Build subject summary — distinct subjects in this timetable
+    var subjectSummary = Model
+        .GroupBy(e => e.SubjectCode)
+        .Select(g => new
+        {
+            Code = g.Key,
+            SubjectName = g.First().SubjectName,
+            Lecturer = g.First().LecturerName
+        })
+        .OrderBy(x => x.Code)
+        .ToList();
+}
+
+<style>
+    /* ── Screen: show print button ── */
+    .screen-bar {
+        margin-bottom: 16px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    /* ── Base page styles ── */
+    .tt-page {
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 11px;
+        color: #000;
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #fff;
+    }
+
+    /* ── College header ── */
+    .tt-header {
+        text-align: center;
+        margin-bottom: 14px;
+    }
+
+        .tt-header .title1 {
+            font-size: 13px;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        .tt-header .title2 {
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+    .tt-meta {
+        margin-bottom: 10px;
+        font-size: 11px;
+        line-height: 1.8;
+    }
+
+        .tt-meta table {
+            width: 100%;
+        }
+
+        .tt-meta td {
+            padding: 0 6px;
+        }
+
+        .tt-meta .eff-date {
+            text-align: right;
+        }
+
+    /* ── Main timetable ── */
+    .tt-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 16px;
+        font-size: 10px;
+    }
+
+        .tt-table th {
+            border: 1px solid #000;
+            background: #d9d9d9;
+            text-align: center;
+            font-weight: bold;
+            padding: 4px 3px;
+            font-size: 10px;
+        }
+
+        .tt-table td {
+            border: 1px solid #000;
+            text-align: center;
+            vertical-align: middle;
+            padding: 3px 2px;
+            min-height: 22px;
+            font-size: 10px;
+        }
+
+            .tt-table td.time-col {
+                background: #f2f2f2;
+                font-weight: bold;
+                white-space: nowrap;
+                text-align: center;
+                width: 90px;
+            }
+
+            .tt-table td.lunch {
+                text-align: center;
+                font-weight: bold;
+                font-size: 11px;
+                background: #fff;
+                letter-spacing: 4px;
+            }
+
+            .tt-table td.wed-col {
+                background: #f9f9f9;
+                color: #aaa;
+            }
+
+    .cell-entry {
+        margin-bottom: 2px;
+        line-height: 1.4;
+    }
+
+    .cell-code {
+        font-weight: bold;
+        font-size: 10px;
+    }
+
+    .cell-group {
+        font-size: 9px;
+        color: #333;
+    }
+
+    /* ── Subject summary table ── */
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 10px;
+    }
+
+        .summary-table th {
+            border: 1px solid #000;
+            background: #d9d9d9;
+            padding: 4px 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .summary-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            vertical-align: top;
+        }
+
+            .summary-table td.num-col {
+                text-align: center;
+                width: 30px;
+            }
+
+            .summary-table td.hrs-col {
+                text-align: center;
+                width: 35px;
+            }
+
+    /* ── Signature row ── */
+    .sig-row {
+        margin-top: 30px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+    }
+
+    .sig-block {
+        text-align: center;
+        min-width: 160px;
+    }
+
+        .sig-block .sig-line {
+            border-top: 1px solid #000;
+            margin-bottom: 4px;
+            margin-top: 30px;
+        }
+
+    /* ── Print: hide button, show everything else ── */
+    @@media print {
+        .screen-bar {
+            display: none !important;
+        }
+
+        .tt-page {
+            padding: 8px;
+            max-width: 100%;
+        }
+
+        .tt-table {
+            font-size: 9px;
+        }
+
+        .summary-table {
+            font-size: 9px;
+        }
+
+        body {
+            margin: 0;
+        }
+    }
+</style>
+
+<!-- Print button (hidden when printing) -->
+<div class="screen-bar no-print">
+    <button class="btn btn-dark btn-sm" onclick="window.print()">
+        <i class="bi bi-printer me-1"></i> Print / Save as PDF
+    </button>
+    <a asp-controller="Timetable" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+
+<div class="tt-page">
+
+    <!-- ── College header ─────────────────────────────── -->
+    <div class="tt-header">
+        <div class="title1">Class Time Table -2025 (2<sup>nd</sup> Semester)</div>
+        <div class="title2">Advanced Technological Institute – Tangalle</div>
+    </div>
+
+    <!-- ── Course meta info ───────────────────────────── -->
+    <div class="tt-meta">
+        <table>
+            <tr>
+                <td style="width:50%">
+                    Course &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:
+                    Higher National Diploma in Information Technology <strong>(HNDIT)</strong>
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Academic Year &nbsp;: First Year</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Semester &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: Second Semester</td>
+                <td class="eff-date">Effective Date: @DateTime.Now.ToString("yyyy-MM-dd")</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ── Main timetable grid ────────────────────────── -->
+    <table class="tt-table">
+        <thead>
+            <tr>
+                <th>Time</th>
+                @foreach (var day in days)
+                {
+                    <th>@day</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var slot in timeSlots.OrderBy(s => s.SortOrder))
+            {
+                <tr>
+                    <td class="time-col">@slot.Duration</td>
+
+                    @if (slot.Duration == "12.30-1.00")
+                    {
+                        <td colspan="7" class="lunch">L U N C H&nbsp;&nbsp;&nbsp;T I M E</td>
+                    }
+                    else
+                    {
+                        @foreach (var day in days)
+                        {
+                            bool hasEntry = grid.ContainsKey(day) && grid[day].ContainsKey(slot.Duration) && grid[day][slot.Duration].Any();
+                            if (hasEntry)
+                            {
+                                <td>
+                                    @foreach (var e in grid[day][slot.Duration])
+                                    {
+                                        <div><span class="cell-code">@e.SubjectCode</span></div>
+                                    }
+                                </td>
+                            }
+                            else
+                            {
+                                <td></td>
+                            }
+                        }
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- ── Subject summary table ──────────────────────── -->
+    <table class="summary-table">
+        <thead>
+            <tr>
+                <th style="width:80px">Code</th>
+                <th>Subjects</th>
+                <th>Lecturer Name</th>
+                <th colspan="3" style="text-align:center">Hours</th>
+            </tr>
+            <tr>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th class="hrs-col">L</th>
+                <th class="hrs-col">T</th>
+                <th class="hrs-col">P</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var sub in subjectSummary)
+            {
+                <tr>
+                    <td>@sub.Code</td>
+                    <td>@sub.SubjectName</td>
+                    <td>@sub.Lecturer</td>
+                    <td class="hrs-col"></td>
+                    <td class="hrs-col"></td>
+                    <td class="hrs-col"></td>
+                </tr>
+            }
+            <tr>
+                <td colspan="3" style="text-align:center;font-weight:bold">
+                    Total Lecture Hours per week
+                </td>
+                <td class="hrs-col"></td>
+                <td class="hrs-col"></td>
+                <td class="hrs-col"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ── Signature row ──────────────────────────────── -->
+    <div class="sig-row">
+        <div class="sig-block">
+            <div class="sig-line"></div>
+            <div>Head of Department</div>
+        </div>
+        <div class="sig-block">
+            <div class="sig-line"></div>
+            <div>Director</div>
+        </div>
+    </div>
+
+</div>

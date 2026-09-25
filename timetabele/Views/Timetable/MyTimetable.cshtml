@@ -1,0 +1,122 @@
+﻿@model List<TimetableApp.Models.TimetableModel>
+@using TimetableApp.Models
+@using System.Linq
+@{
+    ViewData["Title"] = "My Timetable";
+    var timeSlots = ViewBag.TimeSlots as List<TimeSlotModel> ?? new List<TimeSlotModel>();
+    string lecturerName = ViewBag.LecturerName as string ?? "";
+
+    var days = new List<string> { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+
+    // Grid keyed by Duration TEXT (not SlotID — SlotID differs per day for
+    // the same time, see Print.cshtml for the full explanation).
+    var grid = new Dictionary<string, Dictionary<string, TimetableModel>>();
+    foreach (var day in days)
+        grid[day] = new Dictionary<string, TimetableModel>();
+
+    foreach (var e in Model)
+    {
+        if (!grid.ContainsKey(e.DayOfWeek)) continue;
+        grid[e.DayOfWeek][e.Duration] = e;
+    }
+}
+
+<style>
+    .screen-bar { margin-bottom: 16px; display: flex; gap: 10px; align-items: center; }
+
+    .tt-page {
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 11px; color: #000; max-width: 960px; margin: 0 auto; padding: 20px; background: #fff;
+    }
+
+    .tt-header { text-align: center; margin-bottom: 14px; }
+    .tt-header .title1 { font-size: 14px; font-weight: bold; text-decoration: underline; }
+    .tt-header .title2 { font-size: 12px; font-weight: bold; margin-top: 4px; }
+
+    .tt-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10px; }
+    .tt-table th { border: 1px solid #000; background: #d9d9d9; text-align: center; font-weight: bold; padding: 4px 3px; }
+    .tt-table td { border: 1px solid #000; text-align: center; vertical-align: middle; padding: 5px 3px; min-height: 26px; }
+    .tt-table td.time-col { background: #f2f2f2; font-weight: bold; white-space: nowrap; width: 90px; }
+    .tt-table td.lunch { text-align: center; font-weight: bold; font-size: 11px; background: #fff; letter-spacing: 4px; }
+    .tt-table td.has-class { background: #fff7e6; }
+
+    .cell-code { font-weight: bold; display: block; }
+    .cell-sub { font-size: 9.5px; display: block; }
+    .cell-hall { font-size: 9px; color: #555; display: block; }
+
+    .no-classes { text-align: center; color: #777; padding: 30px; font-style: italic; }
+
+    @@media print {
+        .screen-bar { display: none !important; }
+        .tt-page { padding: 8px; max-width: 100%; }
+        body { margin: 0; }
+    }
+</style>
+
+<div class="screen-bar no-print">
+    <button class="btn btn-dark btn-sm" onclick="window.print()">
+        <i class="bi bi-printer me-1"></i> Print / Save as PDF
+    </button>
+    <a asp-controller="Timetable" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+
+<div class="tt-page">
+    <div class="tt-header">
+        <div class="title1">Personal Class Timetable</div>
+        <div class="title2">@lecturerName</div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="no-classes">No classes have been assigned to this lecturer yet.</div>
+    }
+    else
+    {
+        <table class="tt-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    @foreach (var day in days)
+                    {
+                        <th>@day</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var slot in timeSlots.OrderBy(s => s.SortOrder))
+                {
+                    <tr>
+                        <td class="time-col">@slot.Duration</td>
+
+                        @if (slot.Duration == "12.30-1.00")
+                        {
+                            <td colspan="7" class="lunch">L U N C H&nbsp;&nbsp;&nbsp;T I M E</td>
+                        }
+                        else
+                        {
+                            @foreach (var day in days)
+                            {
+                                bool hasEntry = grid.ContainsKey(day) && grid[day].ContainsKey(slot.Duration);
+                                if (hasEntry)
+                                {
+                                    var e = grid[day][slot.Duration];
+                                    <td class="has-class">
+                                        <span class="cell-code">@e.SubjectCode</span>
+                                        <span class="cell-sub">@e.SubjectName</span>
+                                        <span class="cell-hall">@e.HallName</span>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                }
+                            }
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

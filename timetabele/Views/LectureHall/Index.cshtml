@@ -1,0 +1,143 @@
+@{
+    ViewData["Title"] = "Lecture Halls";
+    var halls = ViewBag.Halls as List<TimetableApp.Models.LectureHallModel> ?? new List<TimetableApp.Models.LectureHallModel>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0 fw-semibold"><i class="bi bi-door-open me-2 text-success"></i>Lecture Halls</h4>
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-2">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-3">
+
+    @* ── Add Form ─────────────────────────────────────────────── *@
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white py-2">
+                <i class="bi bi-plus-circle me-1"></i> Add Lecture Hall
+            </div>
+            <div class="card-body">
+                <form asp-controller="LectureHall" asp-action="Save" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Hall Name <span class="text-danger">*</span></label>
+                        <input type="text" name="HallName" class="form-control"
+                               placeholder="e.g. Hall A" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Capacity <span class="text-danger">*</span></label>
+                        <input type="number" name="Capacity" class="form-control"
+                               placeholder="e.g. 60" min="1" max="9999" required />
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-save me-1"></i> Save Hall
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ── List ─────────────────────────────────────────────────── *@
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white py-2">
+                <i class="bi bi-list-ul me-1"></i> All Lecture Halls
+                <span class="badge bg-secondary ms-2">@halls.Count</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Hall Name</th>
+                            <th>Capacity</th>
+                            <th class="text-center" style="width:140px">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!halls.Any())
+                        {
+                            <tr><td colspan="4" class="text-center text-muted py-4">No halls added yet.</td></tr>
+                        }
+                        @foreach (var h in halls)
+                        {
+                            <tr>
+                                <td class="text-muted small">@h.HallID</td>
+                                <td><i class="bi bi-door-open text-success me-1"></i>@h.HallName</td>
+                                <td><span class="badge bg-light text-dark border">@h.Capacity seats</span></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary me-1"
+                                            data-bs-toggle="modal" data-bs-target="#editModal"
+                                            data-id="@h.HallID" data-name="@h.HallName" data-cap="@h.Capacity"
+                                            onclick="fillEdit(this)">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form asp-controller="LectureHall" asp-action="Delete" method="post" class="d-inline"
+                                          onsubmit="return confirm('Delete @h.HallName?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="hallID" value="@h.HallID" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Edit Modal ── *@
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-controller="LectureHall" asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Edit Hall</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editID" name="HallID" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Hall Name <span class="text-danger">*</span></label>
+                        <input type="text" id="editName" name="HallName" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Capacity <span class="text-danger">*</span></label>
+                        <input type="number" id="editCap" name="Capacity" class="form-control" min="1" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function fillEdit(btn) {
+        document.getElementById('editID').value   = btn.dataset.id;
+        document.getElementById('editName').value = btn.dataset.name;
+        document.getElementById('editCap').value  = btn.dataset.cap;
+    }
+</script>
+}

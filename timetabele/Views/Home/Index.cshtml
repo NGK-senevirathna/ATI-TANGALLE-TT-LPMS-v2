@@ -1,0 +1,222 @@
+﻿@{
+    ViewData["Title"] = "Timetable System - Dashboard";
+}
+
+<style>
+    :root {
+        --ink: #1f2937;
+        --muted: #6b7280;
+        --c-dept: #2563eb; /* indigo blue   */
+        --c-subject: #0d9488; /* teal          */
+        --c-hall: #d97706; /* amber         */
+        --c-lecturer: #7c3aed; /* violet        */
+        --c-pref: #db2777; /* rose          */
+        --c-timetable: #059669; /* emerald       */
+        --c-print: #dc2626; /* red           */
+    }
+
+    .dash-card {
+        border: none;
+        border-radius: 14px;
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+        .dash-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.08) !important;
+        }
+
+    .dash-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 14px auto;
+        font-size: 1.6rem;
+    }
+
+    .dash-title {
+        color: var(--ink);
+        font-weight: 600;
+    }
+
+    .dash-sub {
+        color: var(--muted);
+        font-size: .9rem;
+    }
+
+    .btn-dash {
+        border: none;
+        color: #fff;
+        font-weight: 500;
+    }
+
+        .btn-dash:hover {
+            color: #fff;
+            filter: brightness(0.92);
+        }
+
+    .card-dept .dash-icon {
+        background: color-mix(in srgb, var(--c-dept) 15%, white);
+        color: var(--c-dept);
+    }
+
+    .card-subject .dash-icon {
+        background: color-mix(in srgb, var(--c-subject) 15%, white);
+        color: var(--c-subject);
+    }
+
+    .card-hall .dash-icon {
+        background: color-mix(in srgb, var(--c-hall) 15%, white);
+        color: var(--c-hall);
+    }
+
+    .card-lecturer .dash-icon {
+        background: color-mix(in srgb, var(--c-lecturer) 15%, white);
+        color: var(--c-lecturer);
+    }
+
+    .card-pref .dash-icon {
+        background: color-mix(in srgb, var(--c-pref) 15%, white);
+        color: var(--c-pref);
+    }
+
+    .card-timetable .dash-icon {
+        background: color-mix(in srgb, var(--c-timetable) 15%, white);
+        color: var(--c-timetable);
+    }
+
+    .btn-dept {
+        background: var(--c-dept);
+    }
+
+    .btn-subject {
+        background: var(--c-subject);
+    }
+
+    .btn-hall {
+        background: var(--c-hall);
+    }
+
+    .btn-lecturer {
+        background: var(--c-lecturer);
+    }
+
+    .btn-pref {
+        background: var(--c-pref);
+    }
+
+    .btn-timetable {
+        background: var(--c-timetable);
+    }
+
+    .btn-print {
+        background: var(--c-print);
+    }
+
+    .card-timetable-featured {
+        border: 2px solid var(--c-timetable) !important;
+    }
+
+    .hero-title {
+        color: var(--ink);
+    }
+
+    .hero-accent {
+        color: var(--c-timetable);
+    }
+</style>
+
+<div class="text-center mb-5">
+    <h1 class="display-4 fw-bold hero-title">
+        <i class="bi bi-calendar-week hero-accent"></i> Timetable Management System
+    </h1>
+    <p class="lead dash-sub">Advanced Technological Institute - Tangalle</p>
+    <hr class="my-4">
+</div>
+
+<div class="row g-4">
+    <!-- Department -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card dash-card card-dept h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="dash-icon"><i class="bi bi-building"></i></div>
+                <h5 class="dash-title">Department</h5>
+                <p class="dash-sub">Manage Departments</p>
+                <a href="/Department" class="btn btn-dept btn-dash w-100">Open</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card dash-card card-subject h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="dash-icon"><i class="bi bi-book"></i></div>
+                <h5 class="dash-title">Subject</h5>
+                <p class="dash-sub">Manage Subjects</p>
+                <a href="/Subject" class="btn btn-subject btn-dash w-100">Open</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lecture Hall -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card dash-card card-hall h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="dash-icon"><i class="bi bi-door-open"></i></div>
+                <h5 class="dash-title">Lecture Hall</h5>
+                <p class="dash-sub">Manage Halls</p>
+                <a href="/LectureHall" class="btn btn-hall btn-dash w-100">Open</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lecturer -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card dash-card card-lecturer h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="dash-icon"><i class="bi bi-person-badge"></i></div>
+                <h5 class="dash-title">Lecturer</h5>
+                <p class="dash-sub">Manage Lecturers</p>
+                <a href="/Lecturer" class="btn btn-lecturer btn-dash w-100">Open</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preference -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card dash-card card-pref h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="dash-icon"><i class="bi bi-star"></i></div>
+                <h5 class="dash-title">Preference</h5>
+                <p class="dash-sub">Lecturer Preferences</p>
+                <a href="/Preference" class="btn btn-pref btn-dash w-100">Open</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timetable -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card dash-card card-timetable card-timetable-featured h-100 shadow">
+            <div class="card-body text-center">
+                <div class="dash-icon"><i class="bi bi-calendar-check"></i></div>
+                <h5 class="dash-title">Timetable</h5>
+                <p class="dash-sub"><strong>Final Timetable</strong></p>
+                <a href="/Timetable" class="btn btn-timetable btn-dash w-100 mb-2">Open Timetable</a>
+                <a href="/Timetable/Print" class="btn btn-print btn-dash w-100">
+                    <i class="bi bi-printer-fill"></i> Print Official Timetable
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Big Print Button at the bottom -->
+<div class="text-center mt-5">
+    <a href="/Timetable/Print" class="btn btn-print btn-dash btn-lg px-5 py-3">
+        <i class="bi bi-printer"></i> Open &amp; Print Full Official Timetable
+    </a>
+</div>
